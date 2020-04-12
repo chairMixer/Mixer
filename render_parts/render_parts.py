@@ -78,10 +78,10 @@ def render_mesh(v, f, color=[0.216, 0.494, 0.722]):
 
     return img
 
-def render_parts(objs_files, save=False):
+def render_parts(obj_files, save=False):
     root_v_list = []; root_f_list = []; tot_v_num = 0;
-    for objs_file in objs_files:
-        v, f = load_obj(objs_file)
+    for obj_file in obj_files:
+        v, f = load_obj(obj_file)
         mesh = dict()
         mesh['v'] = v; mesh['f'] = f
         root_v_list.append(v)

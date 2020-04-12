@@ -1,6 +1,7 @@
 import os
 import json
 from enum import Enum
+import util
 
 CHAIR_TYPE_NAMES = ["chair_back", "chair_seat", "chair_base", "chair_arm"]
 
@@ -19,18 +20,17 @@ class PartType(Enum):
         return CHAIR_TYPE_NAMES[_type]
 
 class Part:
-    def __init__(self, obs_file, name, _id, text):
-        self.obs_file = obs_file
+    def __init__(self, obj_file, name, _id, text):
+        self.obj_file = obj_file
         self.name = name
         self._id = _id
         self.text = text
-        pass
+        self.v, self.f = util.load_obj(obj_file)
 
-    def build_obb(self):
+    def __build_obb(self):
         """
         build the obb for this part
         """
-        pass
 
     def in_obb(self, v):
         """
@@ -39,13 +39,11 @@ class Part:
         pass
     
     def render(self, save=None, obb=False):
-        """ 
-        render the current obj
-        """
-        pass
+        # TODO: show obb as well
+        util.render_mesh(self.v, self.f, show=True)
 
     def __str__(self):
-        return "Part({},{},{},{})".format(self.obs_file, self.name, self._id, self.text)
+        return "Part({},{},{},{})".format(self.obj_file, self.name, self._id, self.text)
 
 
 class Parts:
@@ -71,7 +69,7 @@ class Parts:
         parts = []
         def find_parts(root):
             if 'objs' in root:
-                part = Part(os.path.join(data_dir, root['objs'][0]),  # FIXME: can there be multiple obs for single part?
+                part = Part(os.path.join(data_dir, "objs", root['objs'][0]+'.obj'),  # FIXME: can there be multiple objs for single part?
                     root['name'], root['id'], root['text'])
                 parts.append(part)
                 return
@@ -81,6 +79,9 @@ class Parts:
                         find_parts(child)
         find_parts(root)
         return parts
+
+    def render(self):
+        util.render_parts([part.obj_file for part in self.parts])
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 
@@ -99,3 +100,5 @@ if __name__ == "__main__":
     parts = Parts(args.data_dir, args.type)
 
     print(parts)
+
+    parts.render()
