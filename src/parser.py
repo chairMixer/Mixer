@@ -2,6 +2,9 @@ import os
 import json
 from enum import Enum
 import util
+from pyobb.obb import OBB
+import numpy as np
+import renderOpen3d
 
 CHAIR_TYPE_NAMES = ["chair_back", "chair_seat", "chair_base", "chair_arm"]
 
@@ -27,24 +30,13 @@ class Part:
         self.text = text
         self.v, self.f = util.load_obj(obj_file)
 
-    def __build_obb(self):
-        """
-        build the obb for this part
-        """
-
-    def in_obb(self, v):
-        """
-        is v in obb
-        """
-        pass
+        self.obb = OBB.build_from_points(self.v[np.reshape(self.f, (1,-1))[0]-1])
     
-    def render(self, save=None, obb=False):
-        # TODO: show obb as well
-        util.render_mesh(self.v, self.f, show=True)
+    def render(self):
+        renderOpen3d.render([self.obj_file], boxes=[self.obb])
 
     def __str__(self):
         return "Part({},{},{},{})".format(self.obj_file, self.name, self._id, self.text)
-
 
 class Parts:
     def __init__(self, data_dir, type_id):
@@ -80,12 +72,16 @@ class Parts:
         find_parts(root)
         return parts
 
-    def render(self):
-        util.render_parts([part.obj_file for part in self.parts])
+    def render(self, idv_boxes=False):
+        renderOpen3d.render(map(lambda x: x.obj_file, self.parts), 
+            boxes=map(lambda x:x.obb, self.parts))
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 
             ','.join([str(part) for part in self.parts]))
+
+    def __iter__(self):
+        return iter(self.parts)
 
 if __name__ == "__main__":
     import argparse
@@ -102,3 +98,6 @@ if __name__ == "__main__":
     print(parts)
 
     parts.render()
+
+    # for part in parts:
+    #     part.render()
