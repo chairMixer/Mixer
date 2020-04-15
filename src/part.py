@@ -11,6 +11,7 @@ import bb
 
 CHAIR_TYPE_NAMES = ["chair_back", "chair_seat", "chair_base", "chair_arm"]
 
+
 class PartType(Enum):
     """
     https://github.com/FENGGENYU/PartNet_symh#d-the-labels-folder
@@ -24,6 +25,7 @@ class PartType(Enum):
     @staticmethod
     def get_name(_type):
         return CHAIR_TYPE_NAMES[_type]
+
 
 class Part:
     def __init__(self, obj_file, name, _id, text):
@@ -69,6 +71,8 @@ class Parts:
         self.__load_data(data_dir, type_id)
 
     def __load_data(self, data_dir, type_id):
+        if data_dir is None:
+            return
         with open(os.path.join(data_dir, 'result.json')) as f:
             structure = json.load(f)
         root = structure[0]
@@ -83,6 +87,8 @@ class Parts:
         """
         y-axis aligned bounding box
         """
+        if len(self._parts) == 0:
+            return None
         v = np.vstack([part.v[[np.reshape(part.f, (1,-1))[0]-1]] for part in self._parts])
         _yaabb = bb.YAABB(v)
         return _yaabb
@@ -103,9 +109,17 @@ class Parts:
         find_parts(root)
         return parts
 
+    def get_render_sets(self):
+        if len(self._parts) > 0:
+            return renderOpen3d.get_render_sets(list(map(lambda x: x.v, self._parts)), 
+                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
+        else:
+            return []
+
     def render(self, idv_boxes=False):
-        renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
-            list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
+        if len(self._parts) > 0:
+            renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
+                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 
@@ -133,6 +147,8 @@ if __name__ == "__main__":
     # parts._parts[0].affine_trans(np.asarray([[1,0,0,0],[0,1,0,10], [0,0,1,0], [0,0,0,1]]))
     
     parts.render()
+
+    print(parts.yaabb)
 
     # for part in parts:
     #     part.render()

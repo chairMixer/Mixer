@@ -23,6 +23,7 @@ def get_normal_lines_set(normals, color=[0, 1, 0]):
 
 
 def get_box_lines_set(points, color=[1, 0, 0]):
+    import pdb; pdb.set_trace()
     # https://github.com/intel-isl/Open3D/blob/master/src/Open3D/Geometry/LineSetFactory.cpp#L84
     lines = [
         [0, 1],
@@ -48,10 +49,8 @@ def get_box_lines_set(points, color=[1, 0, 0]):
 
     return line_set
 
-
-def render_with_vf(vs, fs, boxes, pca_on=False, pcd_on=False, bb_points=None):
-    render_sets = [o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[0, 0, 0])] 
+def get_render_sets(vs, fs, boxes, pca_on=False, pcd_on=False, bb_points=None):
+    render_sets = [] 
     
     if bb_points is not None:
         box_lines_set = get_box_lines_set(bb_points)
@@ -78,7 +77,16 @@ def render_with_vf(vs, fs, boxes, pca_on=False, pcd_on=False, bb_points=None):
 
             normal_lines_set = get_normal_lines_set(pca.components_)
             render_sets.append(normal_lines_set)
-        
+    
+    return render_sets
+
+
+def render_with_vf(vs, fs, boxes, pca_on=False, pcd_on=False, bb_points=None):
+    
+    render_sets = get_render_sets(vs, fs, boxes, pca_on=pca_on, pcd_on=pcd_on, bb_points=bb_points)
+
+    cordinate_frame = [o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])]
+    render_sets += cordinate_frame
 
     o3d.visualization.draw_geometries(render_sets)
 
