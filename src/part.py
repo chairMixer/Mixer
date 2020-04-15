@@ -5,8 +5,11 @@ import util
 from pyobb.obb import OBB
 import numpy as np
 import renderOpen3d
+import open3d as o3d
+
 
 CHAIR_TYPE_NAMES = ["chair_back", "chair_seat", "chair_base", "chair_arm"]
+
 
 class PartType(Enum):
     """
@@ -30,17 +33,37 @@ class Part:
         self.text = text
         self.v, self.f = util.load_obj(obj_file)
 
-        self.obb = OBB.build_from_points(self.v[np.reshape(self.f, (1,-1))[0]-1])
-    
     def render(self):
-        renderOpen3d.render([self.obj_file], boxes=[self.obb])
+        _obb = self.obb
+        renderOpen3d.render_with_vf([self.v], [self.f], [_obb])
+
+    @property
+    def obb(self):
+        pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(self.v[np.reshape(self.f, (1,-1))[0]-1]))
+        _obb = pcd.get_oriented_bounding_box()
+        return _obb
 
     def __str__(self):
         return "Part({},{},{},{})".format(self.obj_file, self.name, self._id, self.text)
 
+    def affine_trans(self, matrix):
+        """
+        apply affine transformation
+        matrix: 4 by 4 ndarray
+        """
+        new_v = []
+        for v in self.v:
+            # import pdb; pdb.set_trace()
+            a = np.ones((4,1))
+            a[0:3,0] = v[:]
+            b = np.dot(matrix, a)
+            new_v.append(b[:3,0])
+        self.v = np.asarray(new_v)
+
+
 class Parts:
     def __init__(self, data_dir, type_id):
-        self.parts = []
+        self._parts = []
         self.num = None
         self.type_id = type_id
         self.data_dir = data_dir
@@ -52,10 +75,10 @@ class Parts:
         root = structure[0]
         for child in root['children']:
             if child['name'] == PartType.get_name(type_id):
-                self.parts = self.get_parts(child, data_dir)
-                self.num = len(self.parts)
+                self._parts = Parts.get_parts(child, data_dir)
+                self.num = len(self._parts)
                 break
-
+    
     @staticmethod
     def get_parts(root, data_dir):
         parts = []
@@ -73,15 +96,16 @@ class Parts:
         return parts
 
     def render(self, idv_boxes=False):
-        renderOpen3d.render(map(lambda x: x.obj_file, self.parts), 
-            boxes=map(lambda x:x.obb, self.parts))
+        renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
+            list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)))
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 
-            ','.join([str(part) for part in self.parts]))
+            ','.join([str(part) for part in self._parts]))
 
     def __iter__(self):
-        return iter(self.parts)
+        return iter(self._parts)
+
 
 if __name__ == "__main__":
     import argparse
@@ -96,7 +120,11 @@ if __name__ == "__main__":
     parts = Parts(args.data_dir, args.type)
 
     print(parts)
+    import pdb; pdb.set_trace()
 
+    # # Test transition
+    # parts._parts[0].affine_trans(np.asarray([[1,0,0,0],[0,1,0,10], [0,0,1,0], [0,0,0,1]]))
+    
     parts.render()
 
     # for part in parts:
