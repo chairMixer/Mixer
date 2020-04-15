@@ -6,10 +6,10 @@ from pyobb.obb import OBB
 import numpy as np
 import renderOpen3d
 import open3d as o3d
+import bb
 
 
 CHAIR_TYPE_NAMES = ["chair_back", "chair_seat", "chair_base", "chair_arm"]
-
 
 class PartType(Enum):
     """
@@ -53,7 +53,6 @@ class Part:
         """
         new_v = []
         for v in self.v:
-            # import pdb; pdb.set_trace()
             a = np.ones((4,1))
             a[0:3,0] = v[:]
             b = np.dot(matrix, a)
@@ -78,6 +77,15 @@ class Parts:
                 self._parts = Parts.get_parts(child, data_dir)
                 self.num = len(self._parts)
                 break
+
+    @property
+    def yaabb(self):
+        """
+        y-axis aligned bounding box
+        """
+        v = np.vstack([part.v[[np.reshape(part.f, (1,-1))[0]-1]] for part in self._parts])
+        _yaabb = bb.YAABB(v)
+        return _yaabb
     
     @staticmethod
     def get_parts(root, data_dir):
@@ -97,7 +105,7 @@ class Parts:
 
     def render(self, idv_boxes=False):
         renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
-            list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)))
+            list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 
@@ -120,7 +128,6 @@ if __name__ == "__main__":
     parts = Parts(args.data_dir, args.type)
 
     print(parts)
-    import pdb; pdb.set_trace()
 
     # # Test transition
     # parts._parts[0].affine_trans(np.asarray([[1,0,0,0],[0,1,0,10], [0,0,1,0], [0,0,0,1]]))

@@ -22,21 +22,21 @@ def get_normal_lines_set(normals, color=[0, 1, 0]):
     return line_set
 
 
-def get_box_lines_set(box, color=[1, 0, 0]):
-    points = box.points
+def get_box_lines_set(points, color=[1, 0, 0]):
+    # https://github.com/intel-isl/Open3D/blob/master/src/Open3D/Geometry/LineSetFactory.cpp#L84
     lines = [
         [0, 1],
-        [1, 2],
-        [2, 3],
-        [3, 0],
-        [4, 5],
-        [5, 6],
-        [6, 7],
-        [7, 4],
-        [1, 4],
-        [2, 7],
+        [1, 7],
+        [7, 2],
+        [2, 0],
         [3, 6],
-        [0, 5],
+        [6, 4],
+        [4, 5],
+        [5, 3],
+        [0, 3],
+        [1, 6],
+        [7, 4],
+        [2, 5],
     ]
     
     colors = [color for i in range(len(lines))]
@@ -49,9 +49,14 @@ def get_box_lines_set(box, color=[1, 0, 0]):
     return line_set
 
 
-def render_with_vf(vs, fs, boxes, pca_on=False, pcd_on=False):
+def render_with_vf(vs, fs, boxes, pca_on=False, pcd_on=False, bb_points=None):
     render_sets = [o3d.geometry.TriangleMesh.create_coordinate_frame(
         size=0.6, origin=[0, 0, 0])] 
+    
+    if bb_points is not None:
+        box_lines_set = get_box_lines_set(bb_points)
+        render_sets.append(box_lines_set)
+
     for i, _ in enumerate(vs):
         v,f, box = vs[i], fs[i], boxes[i]
         mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(v),o3d.utility.Vector3iVector(f-1))
@@ -88,7 +93,8 @@ def render_with_files(obj_files):
         mesh.compute_vertex_normals()
         render_sets.append(mesh)
 
-        box = OBB.build_from_points(np.asarray(mesh.vertices)[np.reshape(np.asarray(mesh.triangles), (1,-1))[0]])
+        pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(v[np.reshape(f, (1,-1))[0]-1]))
+        box = pcd.get_oriented_bounding_box()
         box_line_set = get_box_lines_set(box)
         render_sets.append(box_line_set)
 
