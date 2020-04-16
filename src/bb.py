@@ -25,7 +25,6 @@ class OBB2D:
         ar = np.dot(a,np.linalg.inv(tvect))
 
         # get the minimum and maximum x and y 
-        import pdb; pdb.set_trace()
         mina = np.min(ar,axis=0)
         maxa = np.max(ar,axis=0)
         diff = (maxa - mina)*0.5
@@ -53,20 +52,23 @@ class YAABB:
         # self.obb_xz = OBB2D(v_xz)
         p = np.copy(v)
         p[:,1] = 0
-        for i in range(1,10):
+        for i in range(1,2):
             temp = np.copy(v)
             temp[:,1] = float(i)/10.0
             p = np.vstack([p, temp])
         _obb = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(p))
         self.corners = np.asarray(_obb.get_box_points())
-        import pdb; pdb.set_trace()
         self.center = np.asarray(_obb.get_center())[[0,2]]
 
         self.y_min = np.min(v[:, 1], axis=0)
         self.y_max = np.max(v[:, 1], axis=0)
+        lowers = np.where(self.corners[:,1] < 0.05)[0]
+        uppers = np.where(self.corners[:,1] > 0.05)[0]
+        self.corners[lowers, 1] = self.y_min
+        self.corners[uppers, 1] = self.y_max
 
-        self.corners[[0,2,3,5], 1] = self.y_max
-        self.corners[[1,4,6,7], 1] = self.y_min
+    def __str__(self):
+        return "{}".format(self.corners)
 
 
 if __name__ == "__main__":

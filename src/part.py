@@ -39,6 +39,9 @@ class Part:
         _obb = self.obb
         renderOpen3d.render_with_vf([self.v], [self.f], [_obb])
 
+    def get_points(self):
+        return self.v[np.reshape(self.f, (1,-1))[0]-1]
+
     @property
     def obb(self):
         pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(self.v[np.reshape(self.f, (1,-1))[0]-1]))
@@ -120,6 +123,18 @@ class Parts:
         if len(self._parts) > 0:
             renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
                 list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
+
+    def translation(self, d):
+        """
+        d is a 1*3 vector
+        """
+        matrix = np.eye(4)
+        matrix[:3, 3] = d[:]
+        self.affine_trans(matrix)
+
+    def affine_trans(self, matrix):
+        for _part in self._parts:
+            _part.affine_trans(matrix)
 
     def __str__(self):
         return '{}:[{}]'.format(PartType.get_name(self.type_id), 

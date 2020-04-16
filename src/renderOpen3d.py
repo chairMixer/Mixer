@@ -23,7 +23,6 @@ def get_normal_lines_set(normals, color=[0, 1, 0]):
 
 
 def get_box_lines_set(points, color=[1, 0, 0]):
-    import pdb; pdb.set_trace()
     # https://github.com/intel-isl/Open3D/blob/master/src/Open3D/Geometry/LineSetFactory.cpp#L84
     lines = [
         [0, 1],
