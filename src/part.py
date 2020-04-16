@@ -1,7 +1,6 @@
 import os
 import json
 from enum import Enum
-import util
 from pyobb.obb import OBB
 import numpy as np
 import renderOpen3d
@@ -33,7 +32,26 @@ class Part:
         self.name = name
         self._id = _id
         self.text = text
-        self.v, self.f = util.load_obj(obj_file)
+        self.v, self.f = Part.load_obj(obj_file)
+
+    @staticmethod
+    def load_obj(fn):
+        fin = open(fn, 'r')
+        lines = [line.rstrip() for line in fin]
+        fin.close()
+
+        vertices = []
+        faces = []
+        for line in lines:
+            if line.startswith('v '):
+                vertices.append(np.float32(line.split()[1:4]))
+            elif line.startswith('f '):
+                faces.append(np.int32([item.split('/')[0] for item in line.split()[1:4]]))
+
+        f = np.vstack(faces)
+        v = np.vstack(vertices)
+
+        return v, f
 
     def render(self):
         _obb = self.obb
