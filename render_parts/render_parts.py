@@ -12,6 +12,7 @@ import sys
 import numpy as np
 from subprocess import call
 from collections import deque
+from PIL import Image
 
 import pathlib
 current_dir = pathlib.Path(__file__).parent.absolute()
@@ -55,52 +56,85 @@ def render_mesh(v, f, color=[0.216, 0.494, 0.722]):
     tmp_dir = os.path.join(current_dir, 'tmp')
     if not os.path.exists(tmp_dir):
         os.mkdir(tmp_dir)
-    
     tmp_obj = os.path.join(tmp_dir, str(time.time()).replace('.', '_')+'_'+str(random.random()).replace('.', '_')+'.obj')
-    tmp_png = tmp_obj.replace('.obj', '.png')
+    tmp_png_top = tmp_obj.replace('.obj', '_top')
+    tmp_png_top = tmp_png_top + '.png'
+    tmp_png_front = tmp_png_top.replace('_top', '_front')
+    tmp_png_left = tmp_png_top.replace('_top', '_left')
 
     tmp_mtl = export_obj(tmp_obj, v, f, color=color)
 
     # cmd = 'bash renderer/render.sh renderer/model.blend %s %s' % (tmp_obj, tmp_png)
-    cmd = "{blender} {model} --background --python {python_script} -- {obj} {png}".format(
+    cmd = "{blender} {model} --background --python {python_script} -- {obj} {png_top} {png_front} {png_left}".format(
             blender="/Applications/Blender.app/Contents/MacOS/Blender",
             model=os.path.join(current_dir, "renderer", "model.blend"),
             python_script=os.path.join(current_dir, "renderer", "renderBatch.py"),
             obj=tmp_obj,
-            png=tmp_png)
+            png_top=tmp_png_top,
+            png_front = tmp_png_front,
+            png_left = tmp_png_left)
 
     call(cmd, shell=True)
 
-    img = imread(tmp_png)
+    # img_top = imread(tmp_png_top)
+    # img_front = imread(tmp_png_front)
+    # img_left = imread(tmp_png_left)
 
-    cmd = 'rm -rf %s %s %s' % (tmp_obj, tmp_png, tmp_mtl)
+    img_top = Image.open(tmp_png_top).convert('L')
+    img_front = Image.open(tmp_png_front).convert('L')
+    img_left = Image.open(tmp_png_left).convert('L')
+
+    cmd = 'rm -rf %s %s %s %s %s' % (tmp_obj, tmp_png_top, tmp_png_front, tmp_png_left, tmp_mtl)
     call(cmd, shell=True)
 
-    return img
+    return img_top, img_front, img_left
 
 def render_parts(obj_files, save=False):
-    root_v_list = []; root_f_list = []; tot_v_num = 0;
+    dir = os.path.join(current_dir, 'orthographic_view')
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    count = 0
+
     for obj_file in obj_files:
+        obj_v_list = []; obj_f_list = []; obj_v_num = 0;
         v, f = load_obj(obj_file)
         mesh = dict()
         mesh['v'] = v; mesh['f'] = f
-        root_v_list.append(v)
-        root_f_list.append(f+tot_v_num)
-        tot_v_num += v.shape[0]
+        obj_v_list.append(v)
+        obj_f_list.append(f+obj_v_num)
+        obj_v_num += v.shape[0]
 
-    root_v = np.vstack(root_v_list)
-    root_f = np.vstack(root_f_list)
+        obj_v = np.vstack(obj_v_list)
+        obj_f = np.vstack(obj_f_list)
 
-    center = np.mean(root_v, axis=0)
-    root_v -= center
-    scale = np.sqrt(np.max(np.sum(root_v**2, axis=1))) * 1.5
-    root_v /= scale
+        center = np.mean(obj_v, axis=0)
+        obj_v -= center
+        scale = np.sqrt(np.max(np.sum(obj_v**2, axis=1))) * 1.5
+        obj_v /= scale
 
-    root_render = render_mesh(root_v, root_f, color=[0.93, 0.0, 0.0])
+        obj_top, obj_front, obj_left = render_mesh(obj_v, obj_f, color=[0, 0, 0])
+        
+        save_path1 = "{str_count}.bmp".format(str_count=count)
+        save_path1 = os.path.join(dir, save_path1)
+        save_path2 = "{str_count}.bmp".format(str_count=count+1)
+        save_path2 = os.path.join(dir, save_path2)
+        save_path3 = "{str_count}.bmp".format(str_count=count+2)
+        save_path3 = os.path.join(dir, save_path3)
 
-    alpha_part = root_render
-    imshow(alpha_part)
-    plt.show()
+        obj_front.save(save_path1)
+        obj_left.save(save_path2)
+        obj_top.save(save_path3)
+
+        count += 3
+
+        # plt.figure()
+        # imshow(obj_top)
+        # plt.figure()
+        # imshow(obj_front)
+        # plt.figure()
+        # imshow(obj_left)
+        # plt.show()
+
 
 if __name__ == "__main__":
     import argparse
