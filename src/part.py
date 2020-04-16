@@ -48,6 +48,11 @@ class Part:
         _obb = pcd.get_oriented_bounding_box()
         return _obb
 
+    def scale(self, s):
+        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(self.v),o3d.utility.Vector3iVector(self.f-1))
+        mesh = mesh.scale(s)
+        self.v = np.asarray(mesh.vertices)
+
     def __str__(self):
         return "Part({},{},{},{})".format(self.obj_file, self.name, self._id, self.text)
 
@@ -64,6 +69,10 @@ class Part:
             new_v.append(b[:3,0])
         self.v = np.asarray(new_v)
 
+    def output(self, out_file, color=np.asarray([0.5,0.5,0.5])):
+        mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(self.v),o3d.utility.Vector3iVector(self.f-1))
+        mesh.paint_uniform_color(color)
+        o3d.io.write_triangle_mesh(out_file, mesh, write_vertex_normals=False)
 
 class Parts:
     def __init__(self, data_dir, type_id):
@@ -132,6 +141,10 @@ class Parts:
         matrix[:3, 3] = d[:]
         self.affine_trans(matrix)
 
+    def scale(self, s):
+        for _part in self._parts:
+            _part.scale(s)
+
     def affine_trans(self, matrix):
         for _part in self._parts:
             _part.affine_trans(matrix)
@@ -142,6 +155,24 @@ class Parts:
 
     def __iter__(self):
         return iter(self._parts)
+
+    def output(self, out_file=None, color=np.asarray([0.5,0.5,0.5])):
+        vs = []
+        fs = []
+        offset = 0
+        if len(self._parts) == 0:
+            return None, None
+        for _part in self._parts:
+            vs.append(_part.v)
+            fs.append(_part.f+offset)
+            offset += _part.v.shape[0]
+        v = np.vstack(vs)
+        f = np.vstack(fs)
+        if out_file is not None:
+            mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(v),o3d.utility.Vector3iVector(f-1))
+            mesh.paint_uniform_color(color)
+            o3d.io.write_triangle_mesh(out_file, mesh, write_vertex_normals=False)
+        return v, f
 
 
 if __name__ == "__main__":
@@ -161,7 +192,15 @@ if __name__ == "__main__":
     # # Test transition
     # parts._parts[0].affine_trans(np.asarray([[1,0,0,0],[0,1,0,10], [0,0,1,0], [0,0,0,1]]))
     
-    parts.render()
+    # parts.render()
+    
+    # parts._parts[0].output("tmp.obj", color=[1.0, 0, 0])
+    # mesh = o3d.io.read_triangle_mesh("tmp.obj")
+    # o3d.visualization.draw_geometries([mesh])
+
+    parts.output(out_file="tmp.obj", color=[1.0, 0, 0])
+    mesh = o3d.io.read_triangle_mesh("tmp.obj")
+    o3d.visualization.draw_geometries([mesh])
 
     print(parts.yaabb)
 

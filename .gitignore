@@ -1,2 +1,4 @@
 __pycache__
 tmp/
+.DS_Store
+output

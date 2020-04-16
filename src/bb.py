@@ -59,6 +59,7 @@ class YAABB:
         _obb = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(p))
         self.corners = np.asarray(_obb.get_box_points())
         self.center = np.asarray(_obb.get_center())[[0,2]]
+        self.obb = _obb
 
         self.y_min = np.min(v[:, 1], axis=0)
         self.y_max = np.max(v[:, 1], axis=0)

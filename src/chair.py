@@ -58,34 +58,45 @@ class Chair:
 
     @back.setter
     def back(self, _back):
-        # scale
-        yaabb_base = self.base.yaabb
-        yaabb_back = _back.yaabb
+        if self.base.data_dir == _back.data_dir:
+            self._back = _back
+        else:
+            # scale
+            yaabb_base = self.base.yaabb
+            yaabb_back = _back.yaabb
 
-        scale = (yaabb_base.obb.extent[0]) / ((yaabb_back.obb.extent[0]))
-        _back.scale(scale)
+            scale = (yaabb_base.obb.extent[0]) / ((yaabb_back.obb.extent[0]))
+            _back.scale(scale)
+            
+            # find lowest farset point
         
-        # find lowest farset point
-       
-        yaabb_back = _back.yaabb
-        yaabb_base = self.base.yaabb
+            yaabb_back = _back.yaabb
+            yaabb_base = self.base.yaabb
 
-        intersect_vol = random.randrange(0, 10) * 1.0 / 100.0 # randomness
-        
-        d = yaabb_base.center - yaabb_back.center
-        _back.translation(np.asarray([d[0], yaabb_base.y_max - yaabb_back.y_min - intersect_vol, d[1]]))
+            intersect_vol = random.randrange(0, 10) * 1.0 / 100.0 # randomness
+            
+            d = yaabb_base.center - yaabb_back.center
+            _back.translation(np.asarray([d[0], yaabb_base.y_max - yaabb_back.y_min - intersect_vol, d[1]]))
 
-        points = np.vstack([_part.get_points() for _part in _back._parts])
-        y_min = np.min(points[:, 1])
-        z_min_back =  np.min(points[np.where(points[:, 1] == y_min)[0]][:, 2])
+            points = np.vstack([_part.get_points() for _part in _back._parts])
+            y_min = np.min(points[:, 1])
+            z_min_back =  np.min(points[np.where(points[:, 1] <= y_min+0.02)[0]][:, 2])
 
-        points = np.vstack([_part.get_points() for _part in self.base._parts])
-        y_max = np.max(points[:, 1])
-        z_min_base =  np.min(points[np.where(points[:, 1] == y_max)[0]][:, 2])
+            points = np.vstack([_part.get_points() for _part in self.base._parts])
+            y_max = np.max(points[:, 1])
+            z_min_base =  np.min(points[np.where(points[:, 1] >= y_max-0.02)[0]][:, 2])
 
-        vol = random.randrange(0, 25) * 1.0 / 1000.0 # randomness
-        _back.translation(np.asarray([0,0, z_min_base+vol-z_min_back]))
-        self._back = _back
+            vol = random.randrange(0, 25) * 1.0 / 1000.0 # randomness
+            _back.translation(np.asarray([0,0, z_min_base+vol-z_min_back]))
+
+            # yaabb_back = _back.yaabb
+
+            # z_d =  (yaabb_base.center[1] - yaabb_base.obb.extent[2]) - z_min_back
+            # import pdb; pdb.set_trace()
+            # vol = random.randrange(0, 25) * 1.0 / 1000.0 # randomness
+            # _back.translation(np.asarray([0,0, z_d]))
+
+            self._back = _back
 
     @property
     def leg(self):
@@ -93,22 +104,25 @@ class Chair:
 
     @leg.setter
     def leg(self, _leg):
-        # scale
-        yaabb_base = self.base.yaabb
-        yaabb_leg = _leg.yaabb
-        scale = (yaabb_base.obb.extent[0]*yaabb_base.obb.extent[2]) / ((yaabb_leg.obb.extent[0]*yaabb_leg.obb.extent[2]))
-        _leg.scale(scale)
+        if self.base.data_dir == _leg.data_dir:
+            self._leg = _leg
+        else:
+            # scale
+            yaabb_base = self.base.yaabb
+            yaabb_leg = _leg.yaabb
+            scale = (yaabb_base.obb.extent[0]*yaabb_base.obb.extent[2]) / ((yaabb_leg.obb.extent[0]*yaabb_leg.obb.extent[2]))
+            _leg.scale(scale)
 
-        yaabb_leg = _leg.yaabb
-        # transition
-        d = yaabb_base.center - yaabb_leg.center # (x,z)
+            yaabb_leg = _leg.yaabb
+            # transition
+            d = yaabb_base.center - yaabb_leg.center # (x,z)
 
-        intersect_vol = 0.05 # make it random
+            intersect_vol = random.randrange(25, 75) * 1.0 / 1000.0
 
-        _leg.translation(np.asarray([d[0], yaabb_base.y_min - yaabb_leg.y_max + intersect_vol, d[1]]))
-        self._leg = _leg
+            _leg.translation(np.asarray([d[0], yaabb_base.y_min - yaabb_leg.y_max + intersect_vol, d[1]]))
+            self._leg = _leg
 
-        # TODO: deformation
+            # TODO: deformation
 
     @property
     def arm(self):
@@ -118,6 +132,31 @@ class Chair:
     def arm(self, _arm):
         pass
 
+    def output(self, out_file=None):
+        vs, fs, cs = [], [], []
+        color_dict = {}
+        offset = 0
+        for _parts in self.__iter__():
+            v, f= _parts.output(out_file=None)
+            if v is not None and f is not None:
+                vs.append(v)
+                fs.append(f+offset)
+                if _parts.data_dir in color_dict:
+                    color = color_dict[_parts.data_dir]
+                else:
+                    color = np.random.random(size=3)
+                    color_dict[_parts.data_dir] = color
+                cs += [color] * v.shape[0]
+                offset += v.shape[0]
+        v = np.vstack(vs)
+        f = np.vstack(fs)
+        c = np.vstack(cs)
+
+        if out_file is not None:
+            mesh = o3d.geometry.TriangleMesh(o3d.utility.Vector3dVector(v),o3d.utility.Vector3iVector(f-1))
+            mesh.vertex_colors = o3d.utility.Vector3dVector(c)
+            o3d.io.write_triangle_mesh(out_file, mesh, write_vertex_normals=False)
+        return v, f, c
 
 if __name__ == "__main__":
     # import argparse
@@ -133,10 +172,10 @@ if __name__ == "__main__":
     # chair.render()
 
 
-    chair_1 = Chair("../../../partnet/Chair_parts/2585")
+    chair_1 = Chair("../../../partnet/Chair_parts/43872")
     # chair_1.render()
 
-    chair_2 = Chair("../../../partnet/Chair_parts/2323")
+    chair_2 = Chair("../../../partnet/Chair_parts/2585")
     # chair_2.render()
 
     new_chair = Chair(None)
@@ -145,6 +184,6 @@ if __name__ == "__main__":
     new_chair.back = chair_2.back
     new_chair.render()
 
-
-
-
+    new_chair.output(out_file="tmp.obj")
+    mesh = o3d.io.read_triangle_mesh("tmp.obj")
+    o3d.visualization.draw_geometries([mesh])
