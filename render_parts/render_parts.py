@@ -89,15 +89,16 @@ def render_mesh(v, f, color=[0.216, 0.494, 0.722]):
 
     return img_top, img_front, img_left
 
-def render_parts(obj_files, save=False):
+def render_parts(obj_folder, save=False):
     dir = os.path.join(current_dir, 'orthographic_view')
     if not os.path.exists(dir):
         os.mkdir(dir)
-    count = 0
+    count = 1
 
-    for obj_file in obj_files:
+    # for obj_file in obj_files:
+    for obj_file in sorted(os.listdir(args.folder)):
         obj_v_list = []; obj_f_list = []; obj_v_num = 0;
-        v, f = load_obj(obj_file)
+        v, f = load_obj(os.path.join(obj_folder, obj_file))
         mesh = dict()
         mesh['v'] = v; mesh['f'] = f
         obj_v_list.append(v)
@@ -139,9 +140,11 @@ def render_parts(obj_files, save=False):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='test parts render')
-    parser.add_argument('--files', type=str, action='append')
+    # parser.add_argument('--files', type=str, action='append')
+    parser.add_argument('--folder', type=str)
 
     args = parser.parse_args()
-    
-    render_parts(args.files)
 
+    # render_parts(args.files)
+
+    render_parts(args.folder)
