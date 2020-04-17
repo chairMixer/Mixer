@@ -139,17 +139,17 @@ class Parts:
         find_parts(root)
         return parts
 
-    def get_render_sets(self):
+    def get_render_sets(self, pca_on=False):
         if len(self._parts) > 0:
             return renderOpen3d.get_render_sets(list(map(lambda x: x.v, self._parts)), 
-                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
+                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners, pca_on=pca_on)
         else:
             return []
 
-    def render(self, idv_boxes=False):
+    def render(self, idv_boxes=False, pca_on=False):
         if len(self._parts) > 0:
             renderOpen3d.render_with_vf(list(map(lambda x: x.v, self._parts)), 
-                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners)
+                list(map(lambda x: x.f, self._parts)), list(map(lambda x: x.obb, self._parts)), bb_points=self.yaabb.corners, pca_on=pca_on)
 
     def translation(self, d):
         """

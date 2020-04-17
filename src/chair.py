@@ -32,10 +32,12 @@ class Chair:
         self._leg = Leg(data_dir)
         self._arm = Arm(data_dir)
 
-    def render(self):
+    def render(self, pca_on=False):
         render_sets = []
         for _parts in self.__iter__():
-            render_sets += _parts.get_render_sets()
+            render_sets += _parts.get_render_sets(pca_on=pca_on)
+        cordinate_frame = [o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])]
+        render_sets += cordinate_frame
         o3d.visualization.draw_geometries(render_sets)
 
     def __iter__(self):
@@ -159,31 +161,45 @@ class Chair:
         return v, f, c
 
 if __name__ == "__main__":
-    # import argparse
-    # parser = argparse.ArgumentParser(description='test parser')
-    # parser.add_argument('data_dir', type=str,                         
-    #                     help='data dir, like partnet/1173')
+    import argparse
+    parser = argparse.ArgumentParser(description='test parser')
+    parser.add_argument('data_dir', type=str,                         
+                        help='data dir, like partnet/1173')
 
-    # args = parser.parse_args()
+    args = parser.parse_args()
     
-    # chair = Chair(args.data_dir)
+    chair = Chair(args.data_dir)
 
-    # print(chair)
-    # chair.render()
+    print(chair)
+    chair.render()
 
 
-    chair_1 = Chair("../../../partnet/Chair_parts/43872")
+    # chair_1 = Chair("../../../partnet/Chair_parts/43872")
     # chair_1.render()
 
-    chair_2 = Chair("../../../partnet/Chair_parts/2585")
+    # chair_2 = Chair("../../../partnet/Chair_parts/2585")
     # chair_2.render()
 
-    new_chair = Chair(None)
-    new_chair.base = chair_1.base
-    new_chair.leg = chair_2.leg
-    new_chair.back = chair_2.back
-    new_chair.render()
+    # new_chair = Chair(None)
+    # new_chair.base = chair_1.base
+    # new_chair.leg = chair_2.leg
+    # new_chair.back = chair_2.back
+    # new_chair.render()
 
-    new_chair.output(out_file="tmp.obj")
-    mesh = o3d.io.read_triangle_mesh("tmp.obj")
-    o3d.visualization.draw_geometries([mesh])
+    # new_chair.output(out_file="tmp.obj")
+    # mesh = o3d.io.read_triangle_mesh("tmp.obj")
+    # o3d.visualization.draw_geometries([mesh])
+
+
+    # chair_1 = Chair("../../../partnet/Chair_parts/2323")
+    # chair_1.render()
+
+    # chair_1.base.render(pca_on=True)
+
+    # chair_1.leg.render(pca_on=False)
+
+    # chair_1.back.render()
+    # chair_1.leg.render()
+
+    # chair_1.leg._parts[0].render()
+    # chair_1.arm.render()
