@@ -95,7 +95,7 @@ class Part:
 class Parts:
     def __init__(self, data_dir, type_id):
         self._parts = []
-        self.num = None
+        self.num = 0
         self.type_id = type_id
         self.data_dir = data_dir
         self.__load_data(data_dir, type_id)
@@ -108,9 +108,8 @@ class Parts:
         root = structure[0]
         for child in root['children']:
             if child['name'] == PartType.get_name(type_id):
-                self._parts = Parts.get_parts(child, data_dir)
-                self.num = len(self._parts)
-                break
+                self._parts += Parts.get_parts(child, data_dir)
+                self.num += len(self._parts)
 
     @property
     def yaabb(self):

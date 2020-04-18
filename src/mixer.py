@@ -3,12 +3,15 @@ import random
 import numpy as np
 import chair
 import open3d as o3d
+import time
 from datetime import datetime
 
 import pathlib
 current_dir = pathlib.Path(__file__).parent.absolute()
 
 def output(out_dir, chair):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
     now = datetime.now()
     timestamp = now.strftime('%Y%m%d%H%M%S')
     out_obj = os.path.join(out_dir, timestamp+'.obj')
@@ -30,17 +33,16 @@ def output(out_dir, chair):
     vis.capture_screen_image(out_png)
     vis.destroy_window()
 
-def mixer(data_dir, out_dir):
+def mixer(data_dir, out_dir, num):
     chair_ids = []
     for _, dirs, _ in os.walk(data_dir):
         chair_ids = dirs
         break
     count = 0
-    while count <= len(chair_ids)*10:
+    while count < num:
         base_source = random.choice(chair_ids)
         back_source = random.choice(chair_ids)
         leg_source = random.choice(chair_ids)
-
         if len(set([base_source, back_source, leg_source])) >= 2:
             base_chair = chair.Chair(os.path.join(data_dir, base_source))
             back = chair.Chair(os.path.join(data_dir, back_source)).back
@@ -69,12 +71,14 @@ if __name__ == "__main__":
                         help='input data dir, like partnet')
     parser.add_argument('output_dir', type=str,                         
                         help='output data dir')
+    parser.add_argument('num', type=int,
+                        help='number of new chairs to generate')
 
     args = parser.parse_args()
 
-    mixer(args.input_dir, args.output_dir)
+    mixer(args.input_dir, args.output_dir, args.num)
 
-    # mixer("../../../final/a/", "../out/a/")
-    # mixer("../../../final/b/", "../out/b/")
-    # mixer("../../../final/c", "../out/c/")
+    # mixer("../../../final/a/", "../output/with_arm/a/")
+    # mixer("../../../final/b/", "../output/with_arm/b/")
+    # mixer("../../../final/c", "../output/with_arm/c/")
 

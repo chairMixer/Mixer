@@ -132,7 +132,7 @@ class Chair:
 
     @arm.setter
     def arm(self, _arm):
-        pass
+        self._arm = _arm
 
     def output(self, out_file=None):
         vs, fs, cs = [], [], []
@@ -170,8 +170,10 @@ if __name__ == "__main__":
     
     chair = Chair(args.data_dir)
 
-    print(chair)
+    # print(chair)
     chair.render()
+    # chair.arm.render()
+    # print(chair.arm)
 
 
     # chair_1 = Chair("../../../partnet/Chair_parts/43872")
